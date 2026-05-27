@@ -3,6 +3,7 @@ import time
 from collections import deque
 from functools import wraps
 
+import logging
 from telegram import Update
 from telegram.ext import ContextTypes
 
@@ -10,6 +11,7 @@ from src.config import get_allowed_username, get_allowed_user_id, get_rate_limit
 
 
 _request_timestamps: deque = deque()
+logger = logging.getLogger(__name__)
 
 
 def _check_rate_limit() -> bool:
@@ -31,16 +33,22 @@ def _check_rate_limit() -> bool:
 def _is_authorized(update: Update) -> bool:
     user = update.effective_user
     if not user:
+        logger.warning("Unauthorized access attempt: No user found in update.")
         return False
 
     try:
         allowed_username = get_allowed_username()
         allowed_user_id = get_allowed_user_id()
-    except ValueError:
+    except ValueError as e:
+        logger.error(f"Failed to retrieve security configuration: {e}")
         return False
 
-    return user.username == allowed_username and user.id == allowed_user_id
+    is_authorized = user.username == allowed_username and user.id == allowed_user_id
 
+    if not is_authorized:
+        logger.warning(f"Unauthorized access attempt by user: {user.username} (ID: {user.id})")
+
+    return is_authorized
 
 async def security_middleware(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
     if not _check_rate_limit():

@@ -5,7 +5,7 @@ from src.config import get_allowed_username, get_allowed_user_id
 
 async def get_status() -> str:
     try:
-        async with httpx.AsyncClient(timeout=httpx.Timeout(connect=5.0, read=30.0)) as client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(connect=5.0, read=30.0, write=10.0, pool=None)) as client:
             response = await client.get("http://food-helper:8080/actuator/health")
             response.raise_for_status()
             data = response.json()
@@ -22,7 +22,7 @@ async def get_status() -> str:
 async def plan_meal(description: str) -> str:
     payload = {"description": description}
     try:
-        async with httpx.AsyncClient(timeout=httpx.Timeout(connect=5.0, read=30.0)) as client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(connect=5.0, read=30.0, write=10.0, pool=None)) as client:
             response = await client.post("http://food-helper:8080/meal/plan", json=payload)
             response.raise_for_status()
             data = response.json()
@@ -41,7 +41,7 @@ async def plan_meal(description: str) -> str:
 async def plan_workout(description: str) -> str:
     payload = {"description": description}
     try:
-        async with httpx.AsyncClient(timeout=httpx.Timeout(connect=5.0, read=30.0)) as client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(connect=5.0, read=30.0, write=10.0, pool=None)) as client:
             response = await client.post("http://fit-builder:8080/workout/plan", json=payload)
             response.raise_for_status()
             data = response.json()
