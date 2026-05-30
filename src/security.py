@@ -7,7 +7,7 @@ import logging
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from src.config import get_allowed_username, get_allowed_user_id, get_rate_limit_max, get_rate_limit_window
+from src.config import get_allowed_usernames, get_allowed_user_ids, get_rate_limit_max, get_rate_limit_window
 
 
 _request_timestamps: deque = deque()
@@ -37,13 +37,13 @@ def _is_authorized(update: Update) -> bool:
         return False
 
     try:
-        allowed_username = get_allowed_username()
-        allowed_user_id = get_allowed_user_id()
+        allowed_usernames = get_allowed_usernames()
+        allowed_user_ids = get_allowed_user_ids()
     except ValueError as e:
         logger.error(f"Failed to retrieve security configuration: {e}")
         return False
 
-    is_authorized = user.username == allowed_username and user.id == allowed_user_id
+    is_authorized = user.username in allowed_usernames and user.id in allowed_user_ids
 
     if not is_authorized:
         logger.warning(f"Unauthorized access attempt by user: {user.username} (ID: {user.id})")

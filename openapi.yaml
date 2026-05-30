@@ -82,8 +82,12 @@ components:
     PlanRequest:
       type: object
       required:
+        - userId
         - description
       properties:
+        userId:
+          type: string
+          description: userId to pass
         description:
           type: string
           description: The raw text input provided by the user. If none, pass an empty string.

@@ -1,3 +1,4 @@
+from typing import List
 import os
 
 
@@ -8,21 +9,22 @@ def get_bot_token() -> str:
     return token
 
 
-def get_allowed_username() -> str:
-    username = os.environ.get("ALLOWED_USERNAME")
-    if not username:
-        raise ValueError("ALLOWED_USERNAME environment variable is required")
-    return username
+def get_allowed_usernames() -> List[str]:
+    usernames = os.environ.get("ALLOWED_USERNAMES")
+    if not usernames:
+        raise ValueError("ALLOWED_USERNAMES environment variable is required")
+    return [u.strip() for u in usernames.split(",")]
 
 
-def get_allowed_user_id() -> int:
-    user_id_str = os.environ.get("ALLOWED_USER_ID")
+
+def get_allowed_user_ids() -> List[int]:
+    user_id_str = os.environ.get("ALLOWED_USER_IDS")
     if not user_id_str:
-        raise ValueError("ALLOWED_USER_ID environment variable is required")
+        raise ValueError("ALLOWED_USER_IDS environment variable is required")
     try:
-        return int(user_id_str)
+        return [int(uid.strip()) for uid in user_id_str.split(",")]
     except ValueError:
-        raise ValueError("ALLOWED_USER_ID must be a valid integer")
+        raise ValueError("ALLOWED_USER_IDS must contain valid integers")
 
 
 def get_rate_limit_max() -> int:
