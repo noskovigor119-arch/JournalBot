@@ -55,3 +55,26 @@ async def plan_workout(description: str) -> str:
         return f"Workout planning service unreachable: {str(e)}"
     except Exception as e:
         return f"Workout planning failed: {str(e)}"
+
+
+async def calculate_calories(image_base64: str, mime_type: str, user_id: str) -> str:
+    payload = {
+        "imageBase64": image_base64,
+        "mimeType": mime_type,
+        "userId": user_id
+    }
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(connect=5.0, read=60.0, write=10.0, pool=None)) as client:
+            response = await client.post("http://food-helper:8080/meal/calories/calculate", json=payload)
+            response.raise_for_status()
+            data = response.json()
+            return data.get("result", "No result returned from calories analysis.")
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == 500:
+            error_data = e.response.json()
+            return error_data.get("error", "Calories analysis service returned an error.")
+        return f"Calories analysis service error: HTTP {e.response.status_code}"
+    except httpx.RequestError as e:
+        return f"Calories analysis service unreachable: {str(e)}"
+    except Exception as e:
+        return f"Calories analysis failed: {str(e)}"
