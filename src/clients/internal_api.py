@@ -57,11 +57,12 @@ async def plan_workout(description: str) -> str:
         return f"Workout planning failed: {str(e)}"
 
 
-async def calculate_calories(image_base64: str, mime_type: str, user_id: str) -> str:
+async def calculate_calories(image_base64: str, mime_type: str, user_id: str, meal_description: str) -> str:
     payload = {
         "imageBase64": image_base64,
         "mimeType": mime_type,
-        "userId": user_id
+        "userId": user_id,
+        "mealDescription": meal_description
     }
     try:
         async with httpx.AsyncClient(timeout=httpx.Timeout(connect=5.0, read=60.0, write=10.0, pool=None)) as client:

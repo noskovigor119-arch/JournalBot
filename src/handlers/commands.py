@@ -1,6 +1,7 @@
 import base64
 import io
 import logging
+import re
 
 from telegram import Update
 from telegram.ext import ContextTypes
@@ -31,18 +32,13 @@ async def handle_plan_meal(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 async def handle_calories(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     logger.info("Processing calories calculation from image command")
     message = update.message
-
     caption_text = message.caption or ""
 
-    # Structural Safety Check: If it's a photo from MessageHandler but doesn't target our command
-    if message.photo and not caption_text.startswith("calories"):
-        return
-
-    # Fallback Case: User sent text only command without attaching media
+    # Fallback: If user sent text-only command, the filter might still catch it
+    # if they used the regex, but it won't have a photo attached.
     if not message.photo:
         await message.reply_text(
-            "Please send a photo of your food, and make sure to include "
-            "<b>calories</b> directly inside the photo caption!",
+            "Please send a photo of your food with <b>calories:</b> in the caption",
             parse_mode="HTML"
         )
         return
@@ -59,8 +55,11 @@ async def handle_calories(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     image_base64 = base64.b64encode(image_buffer.getvalue()).decode('utf-8')
     mime_type = "image/jpeg"
 
+    # Ensure the case-insensitive check and the slicing are linked
+    meal_description = re.sub(r'(?i)^calories\s*:\s*', '', caption_text).strip()
+
     # Forward payload data arrays outbound to back-end computation engine
-    calories_response = await calculate_calories(image_base64, mime_type, user_id)
+    calories_response = await calculate_calories(image_base64, mime_type, user_id, meal_description)
 
     result = format_for_telegram(calories_response)
     await message.reply_html(result)

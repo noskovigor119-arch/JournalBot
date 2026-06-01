@@ -136,9 +136,13 @@ components:
       type: object
       required:
         - userId
+        - mealDescription
         - imageBase64
         - mimeType
       properties:
+        mealDescription:
+          type: string
+          description: description of the meal in the photo or empty string
         userId:
           type: string
           description: A generic, client-agnostic identifier for the user (e.g., "sys-user-123").
