@@ -1,6 +1,29 @@
 import httpx
+import logging
 
 from src.config import get_allowed_usernames, get_allowed_user_ids
+
+logger = logging.getLogger(__name__)
+
+
+def _handle_http_status_error(e: httpx.HTTPStatusError, service_name: str) -> str:
+    try:
+        error_data = e.response.json()
+        detail = error_data.get("detail")
+        if detail:
+            return detail
+        title = error_data.get("title")
+        if title:
+            return title
+    except Exception:
+        logger.debug(f"Could not parse error response from {service_name}")
+
+    if e.response.status_code == 503:
+        return f"The {service_name} is currently overloaded or experiencing high demand. Please try again later."
+    elif e.response.status_code == 500:
+        return f"A permanent error occurred while communicating with the {service_name}."
+
+    return f"{service_name} error: HTTP {e.response.status_code}"
 
 
 async def get_status() -> str:
@@ -12,7 +35,7 @@ async def get_status() -> str:
             status = data.get("status", "UNKNOWN")
             return f"FoodHelper service status: {status}"
     except httpx.HTTPStatusError as e:
-        return f"FoodHelper service error: HTTP {e.response.status_code}"
+        return _handle_http_status_error(e, "FoodHelper service")
     except httpx.RequestError as e:
         return f"FoodHelper service unreachable: {str(e)}"
     except Exception as e:
@@ -28,10 +51,7 @@ async def plan_meal(description: str, user_id: str) -> str:
             data = response.json()
             return data.get("result", "No result returned from meal planner.")
     except httpx.HTTPStatusError as e:
-        if e.response.status_code == 500:
-            error_data = e.response.json()
-            return error_data.get("error", "Meal planning service returned an error.")
-        return f"Meal planning service error: HTTP {e.response.status_code}"
+        return _handle_http_status_error(e, "Meal planning service")
     except httpx.RequestError as e:
         return f"Meal planning service unreachable: {str(e)}"
     except Exception as e:
@@ -47,10 +67,7 @@ async def plan_workout(description: str) -> str:
             data = response.json()
             return data.get("result", "No result returned from workout planner.")
     except httpx.HTTPStatusError as e:
-        if e.response.status_code == 500:
-            error_data = e.response.json()
-            return error_data.get("error", "Workout planning service returned an error.")
-        return f"Workout planning service error: HTTP {e.response.status_code}"
+        return _handle_http_status_error(e, "Workout planning service")
     except httpx.RequestError as e:
         return f"Workout planning service unreachable: {str(e)}"
     except Exception as e:
@@ -71,11 +88,9 @@ async def calculate_calories(image_base64: str, mime_type: str, user_id: str, me
             data = response.json()
             return data.get("result", "No result returned from calories analysis.")
     except httpx.HTTPStatusError as e:
-        if e.response.status_code == 500:
-            error_data = e.response.json()
-            return error_data.get("error", "Calories analysis service returned an error.")
-        return f"Calories analysis service error: HTTP {e.response.status_code}"
+        return _handle_http_status_error(e, "Calories analysis service")
     except httpx.RequestError as e:
         return f"Calories analysis service unreachable: {str(e)}"
     except Exception as e:
         return f"Calories analysis failed: {str(e)}"
+
