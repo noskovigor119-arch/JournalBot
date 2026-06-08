@@ -1,7 +1,7 @@
 # Project Status
 
 ## Last Updated
-2026-06-06
+2026-06-08
 
 ## Repository Summary
 The `JournalBot` is a Python-based Telegram orchestrator that acts as a secure gateway to internal home infrastructure services (`food-helper` and `fit-builder`). It provides command-based interactions for meal and workout planning, and image-based analysis for calorie tracking.
@@ -12,77 +12,63 @@ The `JournalBot` is a Python-based Telegram orchestrator that acts as a secure g
 - **Purpose**: Telegram API gateway and orchestrator.
 - **Responsibilities**: 
     - Handle Telegram updates via long-polling.
-    - Enforce security (whitelisting and rate limiting).
-    - Route commands to internal services.
-    - Format internal service responses (Markdown to HTML) for Telegram.
+    - Enforce security (whitelisting and configurable rate limiting).
+    - Route commands to internal services via async HTTP.
+    - Format internal service responses (Markdown to HTML) for Telegram compatibility.
 - **Dependencies**: 
-    - `python-telegram-bot`
+    - `python-telegram-bot` (v20+)
     - `httpx`
     - `markdown`
-- **Exposed Interfaces**: Telegram Bot API (outgoing), No incoming ports.
+- **Exposed Interfaces**: 
+    - Outgoing: Telegram Bot API, internal service APIs.
+    - Incoming: None.
 
 ## Current Functionality
 
 ### Security
-- **Whitelisting**: Only users in `ALLOWED_USERNAMES` and `ALLOWED_USER_IDS` can interact with the bot.
-- **Rate Limiting (Kill Switch)**: If more than 10 requests are received within 60 seconds, the application terminates (`os._exit(1)`).
+- **Whitelisting**: Multi-user support via `ALLOWED_USERNAMES` and `ALLOWED_USER_IDS` environment variables.
+- **Rate Limiting (Kill Switch)**: Configurable rolling window via `RATE_LIMIT_MAX` (default: 10) and `RATE_LIMIT_WINDOW` (default: 60s). Exceeding the limit triggers `os._exit(1)`.
 
 ### Command Handlers
-- `/status`: Checks health of `food-helper`.
-- `/plan_meal [description]`: Sends meal planning request to `food-helper`. Includes `userId`.
-- `/plan_workout [description]`: Sends workout planning request to `fit-builder`.
-- `calories: [description]` (Photo caption): Sends photo and description to `food-helper` for nutritional analysis.
+- `/status`: Checks `http://food-helper:8080/actuator/health`.
+- `/plan_meal [description]`: POSTs to `food-helper`, propagating `userId`.
+- `/plan_workout [description]`: POSTs to `fit-builder`.
+- `calories: [description]` (Photo caption): Multimodal analysis. Sends base64 image, mime type, description, and `userId` to `food-helper`.
 
 ### Response Formatting
-- Converts Markdown responses from internal services to Telegram-compatible HTML using a custom formatter.
+- **Formatter Utility**: Custom regex-based conversion from LLM-generated Markdown to Telegram HTML (handling headers, lists, and spacing).
 
-## API Surface
-
-### Internal API Client (`internal_api.py`)
-- `GET http://food-helper:8080/actuator/health`
+## API Surface (Internal)
+As per `openapi.yaml` and `internal_api.py`:
+- `GET http://food-helper:8080/actuator/health` -> `{"status": str}`
 - `POST http://food-helper:8080/meal/plan` -> `{ "description": str, "userId": str }`
 - `POST http://food-helper:8080/meal/calories/calculate` -> `{ "imageBase64": str, "mimeType": str, "userId": str, "mealDescription": str }`
 - `POST http://fit-builder:8080/workout/plan` -> `{ "description": str }`
 
 ## Architecture Snapshot
-The bot follows an orchestrator pattern. It uses async handlers and an async HTTP client (`httpx`) to communicate with downstream microservices. Security is implemented via decorators that intercept every request.
+- **Pattern**: Orchestrator / API Gateway.
+- **Concurrency**: Fully async using `python-telegram-bot` and `httpx`.
+- **Security**: Decorator-based interceptors for authorization and rate limiting.
 
 ## Planned vs Implemented
 
 ### Completed
-- Project setup and dependencies.
-- Security middleware (Whitelist & Rate Limiter).
-- Internal HTTP client integration.
-- Core commands (`/status`, `/plan_meal`, `/plan_workout`).
-- Containerization (Dockerfile).
-- Image analysis for calories calculation (originally beyond MVP scope).
-- Markdown-to-HTML formatting for Telegram.
+- All tasks from `plan.md` (TASK-1 to TASK-6).
+- Security middleware with whitelist and rate limiting.
+- Multimodal calorie calculation (originally beyond MVP scope).
+- Specialized Markdown-to-HTML formatting.
 
-### Partially Implemented
-- None detected.
-
-### Not Implemented
-- None detected.
-
-### Implemented Beyond Original Plan
-- **Calorie Calculation**: Multimodal support (image + text) for food analysis.
-- **HTML Formatting**: Specialized utility to handle LLM-generated Markdown in Telegram.
-- **Pluralized Security Config**: Support for multiple allowed users via comma-separated env vars.
-
-## Git History Summary
-- **Initial Phase**: MVP setup with basic commands and security.
-- **Enhancement Phase**: Added `userId` propagation and HTML formatting to improve user experience and traceability.
-- **Expansion Phase**: Introduced multimodal capabilities (image analysis for calories) and refined the regex-based command triggering for captions.
-- **Refinement Phase**: Improved error handling for API calls.
+### Discrepancies
+- None. Implementation perfectly aligns with the current `plan.md`.
 
 ## Technical Debt
-- **Error Handling**: While basic error handling exists, more granular error messages for different HTTP failure modes could be improved.
-- **Tests**: No automated tests (unit or integration) were found in the repository.
-- **Config Validation**: `config.py` raises `ValueError` but does not provide a graceful way to handle missing env vars before startup (it happens at runtime when called).
-- **Hardcoded URLs**: Service URLs are hardcoded in `internal_api.py` instead of being configurable via environment variables.
+- **No Automated Tests**: No unit tests for `formatter.py`, `security.py`, or command handlers.
+- **Hardcoded Internal URLs**: Downstream service URLs are hardcoded in `internal_api.py`.
+- **Error Handling**: Basic catch-all in `errors.py`; HTTP status error parsing is centralized but could be more robust.
+- **Configuration**: `config.py` relies on raw `os.environ` without structured validation (e.g., Pydantic).
 
 ## Recommended Next Steps
-1. **Configurability**: Move downstream service URLs to environment variables.
-2. **Testing**: Implement unit tests for `formatter.py` and `security.py`.
-3. **Robustness**: Add retry logic for internal API calls using `httpx`.
-4. **Validation**: Use Pydantic for configuration and internal API models.
+1. **Infrastructure**: Parameterize downstream URLs in `.env`.
+2. **Quality**: Add unit tests for the HTML formatter and security logic.
+3. **Resilience**: Implement retries for internal API calls.
+4. **Validation**: Use Pydantic for configuration and API request/response models.
