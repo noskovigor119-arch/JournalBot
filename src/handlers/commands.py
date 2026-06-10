@@ -8,7 +8,7 @@ from telegram.ext import ContextTypes
 
 from src.clients.internal_api import get_status, plan_meal, plan_workout, calculate_calories
 from src.security import with_security
-from src.utils.formatter import format_for_telegram
+from src.utils.formatter import format_for_telegram, split_html_hybrid
 
 logger = logging.getLogger(__name__)
 
@@ -71,5 +71,11 @@ async def handle_plan_workout(update: Update, context: ContextTypes.DEFAULT_TYPE
     description = " ".join(context.args) if context.args else "Standard default plan"
     user_id = str(update.effective_user.id)
     plan_response = await plan_workout(description, user_id)
-    result = format_for_telegram(plan_response)
-    await update.message.reply_html(result)
+    html_result = format_for_telegram(plan_response)
+
+    # Run the hybrid engine targeting maximum layout integrity
+    message_chunks = split_html_hybrid(html_result, max_chars=4000)
+
+    for chunk in message_chunks:
+        if chunk.strip():
+            await update.message.reply_html(chunk)
