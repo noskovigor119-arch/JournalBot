@@ -58,8 +58,8 @@ async def plan_meal(description: str, user_id: str) -> str:
         return f"Meal planning failed: {str(e)}"
 
 
-async def plan_workout(description: str) -> str:
-    payload = {"description": description}
+async def plan_workout(description: str, user_id: str) -> str:
+    payload = {"description": description, "userId": user_id}
     try:
         async with httpx.AsyncClient(timeout=httpx.Timeout(connect=5.0, read=60.0, write=10.0, pool=None)) as client:
             response = await client.post("http://fit-builder:8080/workout/plan", json=payload)

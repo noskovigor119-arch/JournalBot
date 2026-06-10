@@ -32,7 +32,7 @@ The `JournalBot` is a Python-based Telegram orchestrator that acts as a secure g
 ### Command Handlers
 - `/status`: Checks `http://food-helper:8080/actuator/health`.
 - `/plan_meal [description]`: POSTs to `food-helper`, propagating `userId`.
-- `/plan_workout [description]`: POSTs to `fit-builder`.
+- `/plan_workout [description]`: POSTs to `fit-builder`, propagating `userId`.
 - `calories: [description]` (Photo caption): Multimodal analysis. Sends base64 image, mime type, description, and `userId` to `food-helper`.
 
 ### Response Formatting
@@ -43,7 +43,7 @@ As per `openapi.yaml` and `internal_api.py`:
 - `GET http://food-helper:8080/actuator/health` -> `{"status": str}`
 - `POST http://food-helper:8080/meal/plan` -> `{ "description": str, "userId": str }`
 - `POST http://food-helper:8080/meal/calories/calculate` -> `{ "imageBase64": str, "mimeType": str, "userId": str, "mealDescription": str }`
-- `POST http://fit-builder:8080/workout/plan` -> `{ "description": str }`
+- `POST http://fit-builder:8080/workout/plan` -> `{ "description": str, "userId": str }`
 
 ## Architecture Snapshot
 - **Pattern**: Orchestrator / API Gateway.

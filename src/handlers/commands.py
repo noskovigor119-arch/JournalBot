@@ -69,6 +69,7 @@ async def handle_calories(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 async def handle_plan_workout(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     logger.info(f"Processing /plan_workout")
     description = " ".join(context.args) if context.args else "Standard default plan"
-    plan_response = await plan_workout(description)
+    user_id = str(update.effective_user.id)
+    plan_response = await plan_workout(description, user_id)
     result = format_for_telegram(plan_response)
     await update.message.reply_html(result)

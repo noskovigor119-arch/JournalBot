@@ -11,7 +11,7 @@
 2. **Command Handlers:**
     - `/status`: Checks reachability of `http://food-helper:8080/actuator/health`.
     - `/plan_meal`: Extracts string args. POSTs to `http://food-helper:8080/meal/plan` with `{"description": "...", "userId": "..."}`.
-    - `/plan_workout`: Extracts string args. POSTs to `http://fit-builder:8080/workout/plan` with `{"description": "..."}`.
+    - `/plan_workout`: Extracts string args. POSTs to `http://fit-builder:8080/workout/plan` with `{"description": "...", "userId": "..."}`.
     - `calories` (image caption): Triggered by photos with "calories:" caption. POSTs to `http://food-helper:8080/meal/calories/calculate` with base64 image and description.
 
 ## Network & Deployment constraints
